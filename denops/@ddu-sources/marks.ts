@@ -6,6 +6,8 @@ import { Denops, fn } from "https://deno.land/x/ddu_vim@v0.2.4/deps.ts";
 import { ActionData } from "https://deno.land/x/ddu_kind_file@v0.1.0/file.ts#^";
 import { relative } from "https://deno.land/std@0.122.0/path/mod.ts#^";
 import { isAbsolute, join } from "https://deno.land/std@0.125.0/path/mod.ts";
+import { Env } from "https://deno.land/x/env@v2.2.0/env.js";
+const env = new Env();
 
 //type Params = Record<never, never>;
 type Params = {
@@ -30,6 +32,7 @@ export class Source extends BaseSource<Params> {
         }
 
         const cwd = await fn.getcwd(args.denops) as string;
+        const home = env.get("HOME", "~");
 
         const target = args.sourceParams.jumps ? "jumps" : "marks";
         const marklist_s = await fn.execute(args.denops, target);
@@ -49,9 +52,14 @@ export class Source extends BaseSource<Params> {
 
         for (var item of marklist) {
             const a = item.split(' ').filter(Boolean)
-            if (a.length == 4) {
-                const path = a[3].replace(/^~/, "$HOME"); 
-                const fullPath = isAbsolute(path) ? path : join(cwd, path);
+            if (a.length >= 4) {
+                let path = a[3];
+                let fullPath;
+                if (path[0] == "~") {
+                    fullPath = await path.replace(/^~/, home); 
+                } else {
+                    fullPath = isAbsolute(path) ? path : join(cwd, path);
+                }
                 const nr   = Number(a[1]); 
                 const col  = Number(a[2]); 
                 if (await exists(fullPath)) {
@@ -59,6 +67,15 @@ export class Source extends BaseSource<Params> {
                         word: item,
                         action: {
                             path: fullPath,
+                            lineNr: nr,
+                            col: col,
+                        }
+                    }]);
+                } else {
+                    controller.enqueue([{ 
+                        word: item,
+                        action: {
+                            bufnr: '',
                             lineNr: nr,
                             col: col,
                         }
