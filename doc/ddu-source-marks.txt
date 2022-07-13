@@ -16,6 +16,8 @@ INTRODUCTION				*ddu-source-marks-introduction*
 
 This source collects texts from :marks or :jumps.
 
+Available marks are 'a-z' and 'A-Z'.
+
 
 ==============================================================================
 INSTALL					*ddu-source-marks-install*

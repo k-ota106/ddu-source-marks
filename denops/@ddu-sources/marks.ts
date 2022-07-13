@@ -53,6 +53,9 @@ export class Source extends BaseSource<Params> {
         for (var item of marklist) {
             const a = item.split(' ').filter(Boolean)
             if (a.length >= 4) {
+                if (!args.sourceParams.jumps && !(/^[A-Z]$/.test(a[0]))) {
+                    continue;
+                }
                 let path = a[3];
                 let fullPath;
                 if (path[0] == "~") {
@@ -83,6 +86,38 @@ export class Source extends BaseSource<Params> {
                 }
             }
         }
+
+        if (!args.sourceParams.jumps) {
+            const bufnr = args.context.bufNr;
+            const marklist = await args.denops.call("getmarklist", bufnr);
+
+            const pad = (s: string, w: Number) => {
+                let len = w - s.length  
+                if (len <= 0) {
+                    return s;
+                } else {
+                    return " " * len + s;
+                }
+            };
+
+            for (var item of marklist) {
+                const mark = item.mark[1]
+                if (/[a-z]/.test(mark)) {
+                    const nr = item.pos[1]
+                    const col = item.pos[2]
+                    const line = await fn.getbufline(args.denops, bufnr, nr);
+                    controller.enqueue([{ 
+                        word: await fn.printf(args.denops, " %s %6d %4d %s", mark, nr, col, line[0]),
+                        action: {
+                            bufNr: bufnr,
+                            lineNr: nr,
+                            col: col,
+                        }
+                    }]);
+                }
+            }
+        }
+
 
         controller.close();
       },
